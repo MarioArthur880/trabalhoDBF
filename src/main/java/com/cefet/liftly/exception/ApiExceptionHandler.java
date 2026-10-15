@@ -76,6 +76,19 @@ public class ApiExceptionHandler {
     public ResponseEntity<ApiError> media(Exception ex) {
         return error(415, "UNSUPPORTED_MEDIA_TYPE", "O formato dos dados enviados não é aceito.");
     }
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public ResponseEntity<ApiError> noResource(Exception ex) {
+        return error(404, "NOT_FOUND", "O endereço solicitado não existe. Confira a URL (e o ID informado).");
+    }
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ApiError> notAcceptable(Exception ex) {
+        return error(406, "NOT_ACCEPTABLE", "O formato de resposta pedido (header Accept) não é suportado.");
+    }
+    @ExceptionHandler(org.springframework.web.bind.ServletRequestBindingException.class)
+    public ResponseEntity<ApiError> binding(Exception ex) {
+        log.warn("Requisição sem atributo/header obrigatório", ex);
+        return error(401, "UNAUTHORIZED", "Sua sessão expirou. Entre novamente para continuar.");
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception ex) {
         log.error("Falha inesperada na API", ex);

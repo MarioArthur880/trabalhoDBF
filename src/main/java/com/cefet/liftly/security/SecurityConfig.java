@@ -32,6 +32,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/cadastro").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -39,11 +40,23 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, error) ->
-                                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Autenticacao necessaria"))
+                                escreverErro(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                        "Sua sessão expirou. Entre novamente para continuar."))
                         .accessDeniedHandler((request, response, error) ->
-                                response.sendError(HttpServletResponse.SC_FORBIDDEN, "Sem permissao")))
+                                escreverErro(response, HttpServletResponse.SC_FORBIDDEN,
+                                        "Você não tem permissão para realizar esta ação.")))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
+    }
+
+    /** Escreve o status direto (sem sendError), evitando o redirecionamento interno para /error. */
+    private static void escreverErro(HttpServletResponse response, int status, String mensagem)
+            throws java.io.IOException {
+        response.setStatus(status);
+        response.setContentType("application/json;charset=UTF-8");
+        String code = status == 401 ? "UNAUTHORIZED" : "FORBIDDEN";
+        response.getWriter().write("{\"status\":" + status + ",\"code\":\"" + code
+                + "\",\"message\":\"" + mensagem + "\",\"fieldErrors\":{}}");
     }
 
     @Bean
